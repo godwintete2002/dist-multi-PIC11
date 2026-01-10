@@ -1,0 +1,71 @@
+﻿"""
+Module Compound - Propriétés des composés chimiques
+"""
+from thermo.chemical import Chemical
+import warnings
+warnings.filterwarnings('ignore')
+
+
+class Compound:
+    """
+    Représente un composé chimique avec ses propriétés thermodynamiques
+    """
+    
+    def __init__(self, name):
+        """
+        Initialise le composé depuis la base de données thermo
+        
+        Parameters:
+        -----------
+        name : str
+            Nom du composé (ex: 'benzene', 'toluene', 'xylene')
+        """
+        self.name = name
+        try:
+            self.chem = Chemical(name)
+            
+            # Propriétés critiques
+            self.Tc = self.chem.Tc  # Température critique (K)
+            self.Pc = self.chem.Pc  # Pression critique (Pa)
+            self.omega = self.chem.omega  # Facteur acentrique
+            
+            # Propriétés normales
+            self.Tb = self.chem.Tb  # Température d'ébullition normale (K)
+            self.MW = self.chem.MW  # Masse molaire (g/mol)
+            
+            # Pour l'enthalpie
+            self.Hfus = self.chem.Hfusm if self.chem.Hfusm else 0
+            
+        except Exception as e:
+            raise ValueError(f"Impossible de charger le composé '{name}': {e}")
+    
+    def vapor_pressure(self, T):
+        """Calcule la pression de vapeur saturante à la température T"""
+        self.chem.T = T
+        Psat = self.chem.Psat
+        return Psat if Psat else 1e-10
+    
+    def K_value(self, T, P):
+        """Calcule le coefficient de partage K = y/x"""
+        Psat = self.vapor_pressure(T)
+        return Psat / P
+    
+    def enthalpy_liquid(self, T, T_ref=298.15):
+        """Calcule l'enthalpie du liquide à T"""
+        self.chem.T = T
+        try:
+            Cp_liquid = self.chem.Cplm
+            H_L = Cp_liquid * (T - T_ref)
+            return H_L
+        except:
+            return 4.18 * self.MW * (T - T_ref)
+    
+    def enthalpy_vapor(self, T, T_ref=298.15):
+        """Calcule l'enthalpie de la vapeur à T"""
+        H_L = self.enthalpy_liquid(T, T_ref)
+        self.chem.T = T
+        Hvap = self.chem.Hvap if self.chem.Hvap else 40000
+        return H_L + Hvap
+    
+    def __repr__(self):
+        return f"Compound(name='{self.name}', Tb={self.Tb-273.15:.1f}°C, MW={self.MW:.2f})"

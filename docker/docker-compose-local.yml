@@ -1,0 +1,51 @@
+# =============================================================================
+# Docker Compose - Utilise les Images Locales Déjà Téléchargées
+# =============================================================================
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: distillation-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass changeme123
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - distillation-net
+    # Pas de pull, utilise l'image locale
+
+  web:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      # Évite les pulls pendant le build
+      pull_policy: never
+    image: distillation-app:latest
+    container_name: distillation-web
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=development
+      - SECRET_KEY=dev-secret-key
+      - REDIS_URL=redis://:changeme123@redis:6379/0
+      - PYTHONUNBUFFERED=1
+      - PORT=5000
+    ports:
+      - "5000:5000"
+    volumes:
+      - ../results:/app/results
+      - ../logs:/app/logs
+      - ../temp_uploads:/app/temp_uploads
+    depends_on:
+      - redis
+    networks:
+      - distillation-net
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  distillation-net:
+    driver: bridge

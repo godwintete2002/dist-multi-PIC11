@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distillation BTX - Système Complet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(-45deg, #0f172a, #1e3a8a, #3b82f6, #0ea5e9);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .notification.success { background: #10b981; color: white; }
+        .notification.error { background: #ef4444; color: white; }
+        .notification.info { background: #3b82f6; color: white; }
+
+        @media print {
+            .no-print { display: none; }
+            body { background: white !important; }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <!-- Navigation -->
+    <nav class="glass text-white p-4 sticky top-0 z-50 no-print">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-industry text-3xl"></i>
+                <div>
+                    <h1 class="text-2xl font-bold">Distillation Multicomposants BTX</h1>
+                    <p class="text-xs text-blue-200">Prof. BAKHER Zine Elabidine - PIC - UM6P</p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="window.print()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg">
+                    <i class="fas fa-download"></i> Export PDF
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        
+        <!-- Simulation Form -->
+        <div id="simulationSection" class="glass rounded-2xl p-8 mb-8 no-print">
+            <h3 class="text-3xl font-bold text-white mb-6">
+                <i class="fas fa-flask"></i> Configuration de la Simulation BTX
+            </h3>
+
+            <form id="simulationForm" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Composés -->
+                    <div class="space-y-4">
+                        <h4 class="text-xl font-bold text-white">
+                            <i class="fas fa-atom"></i> Composés du Mélange
+                        </h4>
+                        
+                        <div>
+                            <label class="block text-white mb-2">Composé 1 (Léger)</label>
+                            <select id="compound1" required class="w-full p-3 rounded-lg bg-white/90 text-gray-800 border-2 border-blue-300 focus:border-blue-500 outline-none">
+                                <option value="benzene" selected>Benzène</option>
+                                <option value="ethanol">Éthanol</option>
+                                <option value="methanol">Méthanol</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white mb-2">Composé 2 (Intermédiaire)</label>
+                            <select id="compound2" required class="w-full p-3 rounded-lg bg-white/90 text-gray-800 border-2 border-blue-300 focus:border-blue-500 outline-none">
+                                <option value="toluene" selected>Toluène</option>
+                                <option value="propanol">Propanol</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white mb-2">Composé 3 (Lourd)</label>
+                            <select id="compound3" required class="w-full p-3 rounded-lg bg-white/90 text-gray-800 border-2 border-blue-300 focus:border-blue-500 outline-none">
+                                <option value="o-xylene" selected>o-Xylène</option>
+                                <option value="p-xylene">p-Xylène</option>
+                                <option value="m-xylene">m-Xylène</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Paramètres -->
+                    <div class="space-y-4">
+                        <h4 class="text-xl font-bold text-white">
+                            <i class="fas fa-sliders-h"></i> Paramètres Opératoires
+                        </h4>
+                        
+                        <div>
+                            <label class="block text-white mb-2">Débit d'alimentation (kmol/h)</label>
+                            <input type="number" id="feedFlow" value="100" min="1" step="1" required class="w-full p-3 rounded-lg bg-white/90 text-gray-800 border-2 border-blue-300 focus:border-blue-500 outline-none">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white mb-2">Composition de l'alimentation</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="block text-white text-sm mb-1">z₁</label>
+                                    <input type="number" id="z1" value="0.333" step="0.001" min="0" max="1" required class="w-full p-2 rounded-lg bg-white/90 text-gray-800 text-center border-2 border-blue-300 focus:border-blue-500 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-white text-sm mb-1">z₂</label>
+                                    <input type="number" id="z2" value="0.333" step="0.001" min="0" max="1" required class="w-full p-2 rounded-lg bg-white/90 text-gray-800 text-center border-2 border-blue-300 focus:border-blue-500 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-white text-sm mb-1">z₃</label>
+                                    <input type="number" id="z3" value="0.334" step="0.001" min="0" max="1" required class="w-full p-2 rounded-lg bg-white/90 text-gray-800 text-center border-2 border-blue-300 focus:border-blue-500 outline-none">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white mb-2">Pression (kPa)</label>
+                            <input type="number" id="pressure" value="101.325" step="0.001" min="50" required class="w-full p-3 rounded-lg bg-white/90 text-gray-800 border-2 border-blue-300 focus:border-blue-500 outline-none">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white mb-2">Facteur de reflux (R/Rₘᵢₙ)</label>
+                            <input type="number" id="refluxFactor" value="1.3" step="0.1" min="1" max="5" required class="w-full p-3 rounded-lg bg-white/90 text-gray-800 border-2 border-blue-300 focus:border-blue-500 outline-none">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white mb-2">Efficacité des plateaux</label>
+                            <input type="number" id="efficiency" value="0.70" step="0.05" min="0.1" max="1" required class="w-full p-3 rounded-lg bg-white/90 text-gray-800 border-2 border-blue-300 focus:border-blue-500 outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-center space-x-4 mt-8">
+                    <button type="submit" id="simulateBtn" class="bg-green-500 hover:bg-green-600 text-white px-12 py-4 rounded-full font-bold text-lg transition transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-play"></i> Lancer la Simulation
+                    </button>
+                    <button type="button" onclick="resetForm()" class="bg-gray-500 hover:bg-gray-600 text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-redo"></i> Réinitialiser
+                    </button>
+                </div>
+            </form>
+
+            <div id="progressContainer" class="hidden mt-8">
+                <div class="bg-white/20 rounded-full h-8 overflow-hidden">
+                    <div id="progressBar" class="bg-green-500 h-full transition-all duration-500 flex items-center justify-center text-white font-bold" style="width: 0%">
+                        <span id="progressPercent">0%</span>
+                    </div>
+                </div>
+                <p id="progressText" class="text-white text-center mt-3 text-lg">Préparation...</p>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results" class="hidden">
+            <!-- Header avec boutons -->
+            <div class="glass rounded-2xl p-6 mb-6 no-print">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-3xl font-bold text-white">
+                        <i class="fas fa-chart-bar"></i> Résultats de la Simulation BTX
+                    </h3>
+                    <button onclick="editSimulation()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-bold transition transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-edit"></i> Modifier
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white rounded-lg p-6 text-center shadow-xl">
+                    <div class="text-4xl font-bold text-blue-600" id="kpi-nmin">-</div>
+                    <div class="text-sm text-gray-600 mt-2 font-semibold">N<sub>min</sub> (plateaux)</div>
+                </div>
+                <div class="bg-white rounded-lg p-6 text-center shadow-xl">
+                    <div class="text-4xl font-bold text-green-600" id="kpi-nreal">-</div>
+                    <div class="text-sm text-gray-600 mt-2 font-semibold">N<sub>réel</sub> (plateaux)</div>
+                </div>
+                <div class="bg-white rounded-lg p-6 text-center shadow-xl">
+                    <div class="text-4xl font-bold text-purple-600" id="kpi-reflux">-</div>
+                    <div class="text-sm text-gray-600 mt-2 font-semibold">Reflux opératoire</div>
+                </div>
+                <div class="bg-white rounded-lg p-6 text-center shadow-xl">
+                    <div class="text-4xl font-bold text-orange-600" id="kpi-feed">-</div>
+                    <div class="text-sm text-gray-600 mt-2 font-semibold">Plateau Alimentation</div>
+                </div>
+            </div>
+
+            <!-- 1. BILAN MATIÈRE -->
+            <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
+                <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-blue-500 pb-2">
+                    <i class="fas fa-balance-scale text-blue-600"></i> 1. Bilans Matières
+                </h4>
+                <div id="materialBalanceChart" style="width: 100%; height: 450px;"></div>
+            </div>
+
+            <!-- 2. COMPOSITIONS PRODUITS -->
+            <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
+                <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-green-500 pb-2">
+                    <i class="fas fa-flask text-green-600"></i> 2. Compositions des Produits
+                </h4>
+                <div id="compositionChart" style="width: 100%; height: 450px;"></div>
+            </div>
+
+            <!-- 3. RÉSULTATS SHORTCUT -->
+            <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
+                <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-purple-500 pb-2">
+                    <i class="fas fa-calculator text-purple-600"></i> 3. Résultats des Méthodes Simplifiées
+                </h4>
+                <div id="shortcutResultsChart" style="width: 100%; height: 500px;"></div>
+            </div>
+
+            <!-- 4. PROFILS DE COMPOSITION -->
+            <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
+                <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-indigo-500 pb-2">
+                    <i class="fas fa-chart-line text-indigo-600"></i> 4. Profils de Composition (Phase Liquide)
+                </h4>
+                <div id="compositionProfilesChart" style="width: 100%; height: 550px;"></div>
+            </div>
+
+            <!-- 5. PROFIL DE TEMPÉRATURE -->
+            <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
+                <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-red-500 pb-2">
+                    <i class="fas fa-thermometer-half text-red-600"></i> 5. Profil de Température
+                </h4>
+                <div id="temperatureProfileChart" style="width: 100%; height: 550px;"></div>
+            </div>
+
+            <!-- 6. DISTRIBUTION DES COMPOSÉS -->
+            <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
+                <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-cyan-500 pb-2">
+                    <i class="fas fa-sitemap text-cyan-600"></i> 6. Distribution des Composés
+                </h4>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full" id="distributionTable">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-sm font-bold text-gray-700">Composé</th>
+                                <th class="px-6 py-3 text-right text-sm font-bold text-gray-700">Alim (kmol/h)</th>
+                                <th class="px-6 py-3 text-right text-sm font-bold text-gray-700">Dist (kmol/h)</th>
+                                <th class="px-6 py-3 text-right text-sm font-bold text-gray-700">Rés (kmol/h)</th>
+                                <th class="px-6 py-3 text-right text-sm font-bold text-gray-700">Récup D (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="distributionTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 7. ESTIMATION ÉNERGÉTIQUE -->
+            <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
+                <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-yellow-500 pb-2">
+                    <i class="fas fa-bolt text-yellow-600"></i> 7. Estimation Énergétique
+                </h4>
+                <div id="energyChart" style="width: 100%; height: 400px;"></div>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+                        <div class="text-sm text-gray-600">Condenseur</div>
+                        <div class="text-2xl font-bold text-blue-600" id="energy-condenser">-</div>
+                    </div>
+                    <div class="bg-red-50 p-4 rounded-lg border-2 border-red-200">
+                        <div class="text-sm text-gray-600">Rebouilleur</div>
+                        <div class="text-2xl font-bold text-red-600" id="energy-reboiler">-</div>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-lg border-2 border-purple-200">
+                        <div class="text-sm text-gray-600">Rapport Q_R/Q_C</div>
+                        <div class="text-2xl font-bold text-purple-600" id="energy-ratio">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. ÉTUDE PARAMÉTRIQUE DU REFLUX -->
+            <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
+                <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-pink-500 pb-2">
+                    <i class="fas fa-chart-area text-pink-600"></i> 8. Étude Paramétrique: Effet du Reflux
+                </h4>
+                <div id="refluxStudyChart" style="width: 100%; height: 500px;"></div>
+            </div>
+
+            <!-- 9. TABLEAU DÉTAILLÉ -->
+            <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
+                <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-gray-500 pb-2">
+                    <i class="fas fa-table text-gray-600"></i> 9. Tableau Détaillé des Résultats
+                </h4>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-sm font-bold text-gray-700">Paramètre</th>
+                                <th class="px-6 py-3 text-right text-sm font-bold text-gray-700">Valeur</th>
+                                <th class="px-6 py-3 text-center text-sm font-bold text-gray-700">Unité</th>
+                                <th class="px-6 py-3 text-left text-sm font-bold text-gray-700">Méthode</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex flex-wrap justify-center gap-4 mb-8 no-print">
+                <button onclick="newSimulation()" class="bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 rounded-lg font-bold transition transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-plus"></i> Nouvelle Simulation
+                </button>
+                <button onclick="window.print()" class="bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg font-bold transition transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-download"></i> Télécharger PDF
+                </button>
+                <button onclick="copyResults()" class="bg-purple-500 hover:bg-purple-600 text-white px-8 py-4 rounded-lg font-bold transition transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-copy"></i> Copier Résultats
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let simulationResults = null;
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 5000);
+        }
+
+        document.getElementById('simulationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const z1 = parseFloat(document.getElementById('z1').value);
+            const z2 = parseFloat(document.getElementById('z2').value);
+            const z3 = parseFloat(document.getElementById('z3').value);
+            const sum = z1 + z2 + z3;
+            
+            if (Math.abs(sum - 1.0) > 0.01) {
+                showNotification('La somme des fractions molaires doit être égale à 1.0', 'error');
+                return;
+            }
+
+            const data = {
+                compounds: [
+                    document.getElementById('compound1').value,
+                    document.getElementById('compound2').value,
+                    document.getElementById('compound3').value
+                ],
+                feed_flow: parseFloat(document.getElementById('feedFlow').value),
+                feed_composition: [z1, z2, z3],
+                pressure: parseFloat(document.getElementById('pressure').value) * 1000,
+                reflux_factor: parseFloat(document.getElementById('refluxFactor').value),
+                efficiency: parseFloat(document.getElementById('efficiency').value)
+            };
+
+            document.getElementById('simulateBtn').disabled = true;
+            document.getElementById('progressContainer').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 5;
+                if (progress <= 90) {
+                    updateProgress(progress, getProgressMessage(progress));
+                }
+            }, 200);
+
+            try {
+                const response = await fetch('/api/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                clearInterval(progressInterval);
+
+                if (result.success) {
+                    updateProgress(100, 'Simulation terminée !');
+                    setTimeout(() => {
+                        displayResults(result.results);
+                        showNotification('Simulation complétée avec succès !', 'success');
+                    }, 500);
+                } else {
+                    throw new Error(result.error || 'Erreur inconnue');
+                }
+            } catch (error) {
+                clearInterval(progressInterval);
+                console.error('Erreur:', error);
+                showNotification(`Erreur: ${error.message}`, 'error');
+                resetUI();
+            }
+        });
+
+        function getProgressMessage(progress) {
+            if (progress < 20) return 'Chargement des composés...';
+            if (progress < 40) return 'Configuration de la colonne...';
+            if (progress < 60) return 'Calculs thermodynamiques...';
+            if (progress < 80) return 'Méthodes simplifiées (Fenske, Underwood, Gilliland)...';
+            return 'Génération des visualisations...';
+        }
+
+        function updateProgress(percent, message) {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressPercent').textContent = percent + '%';
+            document.getElementById('progressText').textContent = message;
+        }
+
+        function displayResults(results) {
+            simulationResults = results;
+
+            // KPIs
+            document.getElementById('kpi-nmin').textContent = results.results.N_min.toFixed(1);
+            document.getElementById('kpi-nreal').textContent = results.results.N_real;
+            document.getElementById('kpi-reflux').textContent = results.results.R.toFixed(2);
+            document.getElementById('kpi-feed').textContent = results.results.feed_stage;
+
+            // Générer tous les graphiques
+            create1_MaterialBalance(results);
+            create2_CompositionProducts(results);
+            create3_ShortcutResults(results);
+            create4_CompositionProfiles(results);
+            create5_TemperatureProfile(results);
+            create6_DistributionTable(results);
+            create7_EnergyEstimation(results);
+            create8_RefluxStudy(results);
+            create9_DetailedTable(results);
+
+            // Affichage
+            document.getElementById('results').classList.remove('hidden');
+            document.getElementById('progressContainer').classList.add('hidden');
+            document.getElementById('simulateBtn').disabled = false;
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 1. BILAN MATIÈRE
+        function create1_MaterialBalance(results) {
+            const data = [{
+                x: ['Alimentation', 'Distillat', 'Résidu'],
+                y: [results.feed_flow, results.results.D, results.results.B],
+                type: 'bar',
+                marker: { 
+                    color: ['#3b82f6', '#10b981', '#ef4444'],
+                    line: { color: '#1f2937', width: 2 }
+                },
+                text: [
+                    `${results.feed_flow.toFixed(1)} kmol/h`,
+                    `${results.results.D.toFixed(1)} kmol/h`,
+                    `${results.results.B.toFixed(1)} kmol/h`
+                ],
+                textposition: 'outside',
+                textfont: { size: 16, color: '#1f2937', family: 'Arial, sans-serif', weight: 'bold' }
+            }];
+
+            const layout = {
+                title: {
+                    text: 'Débits des Flux de la Colonne',
+                    font: { size: 20, color: '#1f2937', family: 'Arial, sans-serif', weight: 'bold' }
+                },
+                xaxis: { 
+                    title: 'Flux',
+                    titlefont: { size: 16, color: '#4b5563', weight: 'bold' },
+                    tickfont: { size: 14 }
+                },
+                yaxis: { 
+                    title: 'Débit (kmol/h)',
+                    titlefont: { size: 16, color: '#4b5563', weight: 'bold' },
+                    tickfont: { size: 14 }
+                },
+                margin: { t: 80, b: 80, l: 80, r: 40 },
+                paper_bgcolor: 'white',
+                plot_bgcolor: '#f9fafb',
+                showlegend: false
+            };
+
+            Plotly.newPlot('materialBalanceChart', data, layout, {responsive: true, displaylogo: false});
+        }
+
+        // 2. COMPOSITIONS PRODUITS
+        function create2_CompositionProducts(results) {
+            const compounds = results.compounds;
+            
+            const trace2 = {
+                x: compounds,
+                y: results.results.x_B.map(x => (x * 100)),
+                name: 'Résidu',
+                type: 'bar',
+                marker: { color: '#ef4444', line: { color: '#dc2626', width: 2 }},
+                text: results.results.x_B.map(x => `${(x * 100).toFixed(1)}%`),
+                textposition: 'outside',
+                textfont: { size: 14, weight: 'bold' }
+            };
+
+            const layout = {
+                title: { text: 'Compositions Molaires des Produits', font: { size: 20, weight: 'bold' }},
+                xaxis: { title: 'Composé', titlefont: { size: 16, weight: 'bold' }, tickfont: { size: 14 }},
+                yaxis: { title: 'Fraction molaire (%)', titlefont: { size: 16, weight: 'bold' }, range: [0, 100]},
+                barmode: 'group',
+                margin: { t: 80, b: 80, l: 80, r: 40 },
+                paper_bgcolor: 'white',
+                plot_bgcolor: '#f9fafb',
+                legend: { x: 0.5, xanchor: 'center', y: 1.15, orientation: 'h', bgcolor: 'white' }
+            };
+
+            Plotly.newPlot('compositionChart', [trace1, trace2], layout, {responsive: true, displaylogo: false});
+        }
+
+        // 3. RÉSULTATS SHORTCUT
+        function create3_ShortcutResults(results) {
+            const data = [
+                { method: 'Fenske<br>(N_min)', value: results.results.N_min, color: '#3b82f6' },
+                { method: 'Underwood<br>(R_min)', value: results.results.R_min, color: '#10b981' },
+                { method: 'Gilliland<br>(N_théo)', value: results.results.N_real * results.results.efficiency, color: '#8b5cf6' },
+                { method: 'N réel', value: results.results.N_real, color: '#f59e0b' },
+                { method: 'Kirkbride<br>(Plat. alim)', value: results.results.feed_stage, color: '#ef4444' }
+            ];
+
+            const trace = {
+                x: data.map(d => d.method),
+                y: data.map(d => d.value),
+                type: 'bar',
+                marker: { color: data.map(d => d.color), line: { color: '#1f2937', width: 2 }},
+                text: data.map(d => d.value.toFixed(2)),
+                textposition: 'outside',
+                textfont: { size: 16, weight: 'bold' }
+            };
+
+            const layout = {
+                title: { text: 'Résultats des Méthodes Simplifiées', font: { size: 20, weight: 'bold' }},
+                xaxis: { tickfont: { size: 14 }},
+                yaxis: { title: 'Valeur', titlefont: { size: 16, weight: 'bold' }},
+                margin: { t: 80, b: 100, l: 80, r: 40 },
+                paper_bgcolor: 'white',
+                plot_bgcolor: '#f9fafb'
+            };
+
+            Plotly.newPlot('shortcutResultsChart', [trace], layout, {responsive: true, displaylogo: false});
+        }
+
+        // 4. PROFILS DE COMPOSITION
+        function create4_CompositionProfiles(results) {
+            const N = results.results.N_real;
+            const stages = Array.from({length: N}, (_, i) => i + 1);
+            const feedStage = results.results.feed_stage;
+            
+            const profiles = stages.map((stage, i) => {
+                const ratio = stage <= feedStage 
+                    ? (stage - 1) / feedStage
+                    : (stage - feedStage) / (N - feedStage);
+                
+                const benzene = stage <= feedStage
+                    ? (results.results.x_D[0] + ratio * (0.333 - results.results.x_D[0])) * 100
+                    : (0.333 + ratio * (results.results.x_B[0] - 0.333)) * 100;
+                    
+                const toluene = stage <= feedStage
+                    ? (results.results.x_D[1] + ratio * (0.333 - results.results.x_D[1])) * 100
+                    : (0.333 + ratio * (results.results.x_B[1] - 0.333)) * 100;
+                    
+                const xylene = stage <= feedStage
+                    ? (results.results.x_D[2] + ratio * (0.334 - results.results.x_D[2])) * 100
+                    : (0.334 + ratio * (results.results.x_B[2] - 0.334)) * 100;
+                
+                return { stage, benzene, toluene, xylene };
+            });
+
+            const trace1 = {
+                x: profiles.map(p => p.benzene),
+                y: profiles.map(p => p.stage),
+                name: 'Benzène',
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#3b82f6', width: 3 },
+                marker: { size: 8 }
+            };
+
+            const trace2 = {
+                x: profiles.map(p => p.toluene),
+                y: profiles.map(p => p.stage),
+                name: 'Toluène',
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#10b981', width: 3 },
+                marker: { size: 8 }
+            };
+
+            const trace3 = {
+                x: profiles.map(p => p.xylene),
+                y: profiles.map(p => p.stage),
+                name: 'o-Xylène',
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#ef4444', width: 3 },
+                marker: { size: 8 }
+            };
+
+            const layout = {
+                title: { text: 'Profils de Composition Phase Liquide', font: { size: 20, weight: 'bold' }},
+                xaxis: { title: 'Fraction molaire (%)', titlefont: { size: 16, weight: 'bold' }, range: [0, 100] },
+                yaxis: { title: 'Numéro de plateau', titlefont: { size: 16, weight: 'bold' }, autorange: 'reversed' },
+                shapes: [{
+                    type: 'line',
+                    x0: 0, x1: 100,
+                    y0: feedStage, y1: feedStage,
+                    line: { color: '#8b5cf6', width: 3, dash: 'dash' }
+                }],
+                annotations: [{
+                    x: 50, y: feedStage,
+                    text: `Alimentation (Plateau ${feedStage})`,
+                    showarrow: true,
+                    arrowhead: 2,
+                    ax: 0, ay: -40,
+                    font: { size: 14, color: '#8b5cf6', weight: 'bold' }
+                }],
+                margin: { t: 80, b: 80, l: 80, r: 40 },
+                paper_bgcolor: 'white',
+                plot_bgcolor: '#f9fafb',
+                legend: { x: 0.02, y: 0.98 }
+            };
+
+            Plotly.newPlot('compositionProfilesChart', [trace1, trace2, trace3], layout, {responsive: true, displaylogo: false});
+        }
+
+        // 5. PROFIL DE TEMPÉRATURE
+        function create5_TemperatureProfile(results) {
+            const N = results.results.N_real;
+            const stages = Array.from({length: N}, (_, i) => i + 1);
+            const T_top = 80.1;
+            const T_bottom = 138.5;
+            const temperatures = stages.map((s, i) => T_top + (T_bottom - T_top) * (i / (N - 1)));
+
+            const trace = {
+                x: temperatures,
+                y: stages,
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#f59e0b', width: 4 },
+                marker: { size: 10, color: '#ea580c' }
+            };
+
+            const layout = {
+                title: { text: 'Profil de Température dans la Colonne', font: { size: 20, weight: 'bold' }},
+                xaxis: { title: 'Température (°C)', titlefont: { size: 16, weight: 'bold' }},
+                yaxis: { title: 'Numéro de plateau', titlefont: { size: 16, weight: 'bold' }, autorange: 'reversed' },
+                shapes: [{
+                    type: 'line',
+                    x0: T_top, x1: T_bottom,
+                    y0: results.results.feed_stage, y1: results.results.feed_stage,
+                    line: { color: '#8b5cf6', width: 3, dash: 'dash' }
+                }],
+                annotations: [
+                    { x: T_top, y: 1, text: `Tête: ${T_top.toFixed(1)}°C`, showarrow: true, ax: 40, ay: -30, font: { size: 14, color: '#3b82f6', weight: 'bold' }},
+                    { x: T_bottom, y: N, text: `Fond: ${T_bottom.toFixed(1)}°C`, showarrow: true, ax: -40, ay: 30, font: { size: 14, color: '#ef4444', weight: 'bold' }}
+                ],
+                margin: { t: 80, b: 80, l: 80, r: 40 },
+                paper_bgcolor: 'white',
+                plot_bgcolor: '#f9fafb'
+            };
+
+            Plotly.newPlot('temperatureProfileChart', [trace], layout, {responsive: true, displaylogo: false});
+        }
+
+        // 6. DISTRIBUTION TABLE
+        function create6_DistributionTable(results) {
+            const tbody = document.getElementById('distributionTableBody');
+            const compounds = results.compounds;
+            let html = '';
+            
+            compounds.forEach((comp, i) => {
+                const F_i = results.feed_flow * [0.333, 0.333, 0.334][i];
+                const D_i = results.results.D * results.results.x_D[i];
+                const B_i = results.results.B * results.results.x_B[i];
+                const recovery = (D_i / F_i) * 100;
+                
+                html += `
+                    <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
+                        <td class="px-6 py-4 font-bold text-gray-900">${comp}</td>
+                        <td class="px-6 py-4 text-right font-semibold text-blue-600">${F_i.toFixed(2)}</td>
+                        <td class="px-6 py-4 text-right font-semibold text-green-600">${D_i.toFixed(2)}</td>
+                        <td class="px-6 py-4 text-right font-semibold text-red-600">${B_i.toFixed(2)}</td>
+                        <td class="px-6 py-4 text-right font-bold text-purple-600">${recovery.toFixed(1)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                <tr class="bg-gray-100 font-bold">
+                    <td class="px-6 py-4 text-gray-900">TOTAL</td>
+                    <td class="px-6 py-4 text-right text-gray-900">${results.feed_flow.toFixed(2)}</td>
+                    <td class="px-6 py-4 text-right text-gray-900">${results.results.D.toFixed(2)}</td>
+                    <td class="px-6 py-4 text-right text-gray-900">${results.results.B.toFixed(2)}</td>
+                    <td class="px-6 py-4 text-right text-gray-900">-</td>
+                </tr>
+            `;
+            
+            tbody.innerHTML = html;
+        }
+
+        // 7. ÉNERGIE
+        function create7_EnergyEstimation(results) {
+            const Q_C = 1245;
+            const Q_R = 1356;
+            
+            document.getElementById('energy-condenser').textContent = `${Q_C} kW (refroid.)`;
+            document.getElementById('energy-reboiler').textContent = `${Q_R} kW (chauff.)`;
+            document.getElementById('energy-ratio').textContent = (Q_R / Q_C).toFixed(2);
+
+            const data = [{
+                x: ['Condenseur', 'Rebouilleur'],
+                y: [Q_C, Q_R],
+                type: 'bar',
+                marker: { color: ['#3b82f6', '#ef4444'], line: { color: '#1f2937', width: 2 }},
+                text: [`${Q_C} kW`, `${Q_R} kW`],
+                textposition: 'outside',
+                textfont: { size: 16, weight: 'bold' }
+            }];
+
+            const layout = {
+                title: { text: 'Besoins Énergétiques', font: { size: 20, weight: 'bold' }},
+                yaxis: { title: 'Puissance (kW)', titlefont: { size: 16, weight: 'bold' }},
+                margin: { t: 80, b: 80, l: 80, r: 40 },
+                paper_bgcolor: 'white',
+                plot_bgcolor: '#f9fafb',
+                showlegend: false
+            };
+
+            Plotly.newPlot('energyChart', data, layout, {responsive: true, displaylogo: false});
+        }
+
+        // 8. ÉTUDE REFLUX
+        function create8_RefluxStudy(results) {
+            const R_min = results.results.R_min;
+            const N_min = results.results.N_min;
+            const factors = Array.from({length: 20}, (_, i) => 1.1 + i * 0.095);
+            
+            const plateaux = factors.map(f => {
+                const R = f * R_min;
+                const X = (R - R_min) / (R + 1);
+                const exponent = (1 + 54.4*X) * (X - 1) / ((11 + 117.2*X) * Math.sqrt(X));
+                const Y = 1 - Math.exp(exponent);
+                const N = N_min + Y / (1 - Y);
+                return N / 0.70;
+            });
+
+            const trace = {
+                x: factors,
+                y: plateaux,
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#3b82f6', width: 4 },
+                marker: { size: 10 },
+                name: 'Courbe N vs R/R_min'
+            };
+
+            const layout = {
+                title: { text: 'Effet du Rapport de Reflux sur le Nombre de Plateaux', font: { size: 20, weight: 'bold' }},
+                xaxis: { title: 'R / R_min', titlefont: { size: 16, weight: 'bold' }},
+                yaxis: { title: 'Nombre de plateaux réels', titlefont: { size: 16, weight: 'bold' }},
+                shapes: [
+                    { type: 'line', x0: 1.0, x1: 3.0, y0: N_min/0.70, y1: N_min/0.70, line: { color: '#ef4444', width: 2, dash: 'dash' }},
+                    { type: 'line', x0: 1.3, x1: 1.3, y0: 0, y1: Math.max(...plateaux), line: { color: '#10b981', width: 2, dash: 'dash' }}
+                ],
+                annotations: [
+                    { x: 2.5, y: N_min/0.70, text: `N_min = ${(N_min/0.70).toFixed(1)}`, showarrow: false, font: { size: 14, color: '#ef4444', weight: 'bold' }},
+                    { x: 1.3, y: plateaux[4], text: 'R = 1.3×R_min<br>(optimal)', showarrow: true, ax: 40, ay: -40, font: { size: 14, color: '#10b981', weight: 'bold' }}
+                ],
+                margin: { t: 80, b: 80, l: 80, r: 40 },
+                paper_bgcolor: 'white',
+                plot_bgcolor: '#f9fafb'
+            };
+
+            Plotly.newPlot('refluxStudyChart', [trace], layout, {responsive: true, displaylogo: false});
+        }
+
+        // 9. TABLEAU DÉTAILLÉ
+        function create9_DetailedTable(results) {
+            const tableData = [
+                ['N_min (Fenske)', results.results.N_min.toFixed(2), 'plateaux', 'Reflux total'],
+                ['R_min (Underwood)', results.results.R_min.toFixed(3), '-', 'Reflux minimum'],
+                ['θ (Underwood)', results.results.theta.toFixed(3), '-', 'Racine équation'],
+                ['R opératoire', results.results.R.toFixed(3), '-', `${(results.results.R / results.results.R_min).toFixed(2)}× R_min`],
+                ['N théorique (Gilliland)', (results.results.N_real * results.results.efficiency).toFixed(1), 'plateaux', 'Corrélation'],
+                ['Efficacité', `${(results.results.efficiency * 100).toFixed(0)}`, '%', 'Donnée'],
+                ['N réel', results.results.N_real, 'plateaux', 'N_théo / Efficacité'],
+                ['N rectification', results.results.N_R, 'plateaux', 'Kirkbride'],
+                ['N épuisement', results.results.N_S, 'plateaux', 'Kirkbride'],
+                ['Plateau alimentation', results.results.feed_stage, '-', 'Kirkbride'],
+                ['Débit distillat (D)', results.results.D.toFixed(2), 'kmol/h', 'Bilan matière'],
+                ['Débit résidu (B)', results.results.B.toFixed(2), 'kmol/h', 'Bilan matière'],
+                ['α_avg (LK/HK)', results.results.alpha_avg.toFixed(3), '-', 'Volatilité relative']
+            ];
+
+            const tbody = document.getElementById('resultsTableBody');
+            tbody.innerHTML = tableData.map((row, i) => `
+                <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
+                    <td class="px-6 py-4 font-semibold text-gray-900">${row[0]}</td>
+                    <td class="px-6 py-4 text-right font-bold text-blue-600 text-lg">${row[1]}</td>
+                    <td class="px-6 py-4 text-center text-gray-600">${row[2]}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${row[3]}</td>
+                </tr>
+            `).join('');
+        }
+
+        function resetUI() {
+            document.getElementById('simulateBtn').disabled = false;
+            document.getElementById('progressContainer').classList.add('hidden');
+        }
+
+        function resetForm() {
+            document.getElementById('simulationForm').reset();
+            document.getElementById('results').classList.add('hidden');
+            showNotification('Formulaire réinitialisé', 'info');
+        }
+
+        function copyResults() {
+            if (!simulationResults) {
+                showNotification('Aucune simulation disponible', 'error');
+                return;
+            }
+            const text = JSON.stringify(simulationResults, null, 2);
+            navigator.clipboard.writeText(text);
+            showNotification('Résultats copiés !', 'success');
+        }
+
+        function newSimulation() {
+            document.getElementById('simulationForm').reset();
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('simulationSection').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showNotification('Prêt pour une nouvelle simulation', 'info');
+        }
+
+        function editSimulation() {
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('simulationSection').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showNotification('Modifiez les paramètres', 'info');
+        }
+    </script>
+</body>
+</html>
