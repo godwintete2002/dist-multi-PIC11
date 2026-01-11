@@ -48,8 +48,9 @@
         .notification.info { background: #3b82f6; color: white; }
 
         @media print {
-            .no-print { display: none; }
+            .no-print { display: none !important; }
             body { background: white !important; }
+            .gradient-bg { background: white !important; }
         }
     </style>
 </head>
@@ -63,11 +64,6 @@
                     <h1 class="text-2xl font-bold">Distillation Multicomposants BTX</h1>
                     <p class="text-xs text-blue-200">Prof. BAKHER Zine Elabidine - PIC - UM6P</p>
                 </div>
-            </div>
-            <div class="flex gap-3">
-                <button onclick="window.print()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg">
-                    <i class="fas fa-download"></i> Export PDF
-                </button>
             </div>
         </div>
     </nav>
@@ -93,8 +89,6 @@
                             <label class="block text-white mb-2">Composé 1 (Léger)</label>
                             <select id="compound1" required class="w-full p-3 rounded-lg bg-white/90 text-gray-800 border-2 border-blue-300 focus:border-blue-500 outline-none">
                                 <option value="benzene" selected>Benzène</option>
-                                <option value="ethanol">Éthanol</option>
-                                <option value="methanol">Méthanol</option>
                             </select>
                         </div>
                         
@@ -102,7 +96,6 @@
                             <label class="block text-white mb-2">Composé 2 (Intermédiaire)</label>
                             <select id="compound2" required class="w-full p-3 rounded-lg bg-white/90 text-gray-800 border-2 border-blue-300 focus:border-blue-500 outline-none">
                                 <option value="toluene" selected>Toluène</option>
-                                <option value="propanol">Propanol</option>
                             </select>
                         </div>
                         
@@ -110,8 +103,6 @@
                             <label class="block text-white mb-2">Composé 3 (Lourd)</label>
                             <select id="compound3" required class="w-full p-3 rounded-lg bg-white/90 text-gray-800 border-2 border-blue-300 focus:border-blue-500 outline-none">
                                 <option value="o-xylene" selected>o-Xylène</option>
-                                <option value="p-xylene">p-Xylène</option>
-                                <option value="m-xylene">m-Xylène</option>
                             </select>
                         </div>
                     </div>
@@ -184,15 +175,20 @@
 
         <!-- Results Section -->
         <div id="results" class="hidden">
-            <!-- Header avec boutons -->
+            <!-- Header -->
             <div class="glass rounded-2xl p-6 mb-6 no-print">
                 <div class="flex justify-between items-center">
                     <h3 class="text-3xl font-bold text-white">
                         <i class="fas fa-chart-bar"></i> Résultats de la Simulation BTX
                     </h3>
-                    <button onclick="editSimulation()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-bold transition transform hover:scale-105 shadow-lg">
-                        <i class="fas fa-edit"></i> Modifier
-                    </button>
+                    <div class="flex gap-3">
+                        <button onclick="downloadPDF()" class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-bold transition">
+                            <i class="fas fa-file-pdf"></i> Export PDF
+                        </button>
+                        <button onclick="editSimulation()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-bold transition">
+                            <i class="fas fa-edit"></i> Modifier
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -208,109 +204,58 @@
                 </div>
                 <div class="bg-white rounded-lg p-6 text-center shadow-xl">
                     <div class="text-4xl font-bold text-purple-600" id="kpi-reflux">-</div>
-                    <div class="text-sm text-gray-600 mt-2 font-semibold">Reflux opératoire</div>
+                    <div class="text-sm text-gray-600 mt-2 font-semibold">Reflux</div>
                 </div>
                 <div class="bg-white rounded-lg p-6 text-center shadow-xl">
                     <div class="text-4xl font-bold text-orange-600" id="kpi-feed">-</div>
-                    <div class="text-sm text-gray-600 mt-2 font-semibold">Plateau Alimentation</div>
+                    <div class="text-sm text-gray-600 mt-2 font-semibold">Plateau Alim.</div>
                 </div>
             </div>
 
             <!-- 1. BILAN MATIÈRE -->
             <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
                 <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-blue-500 pb-2">
-                    <i class="fas fa-balance-scale text-blue-600"></i> 1. Bilans Matières
+                    <i class="fas fa-balance-scale text-blue-600"></i> 1. Bilans Matières (btx_bilan_matiere.png)
                 </h4>
-                <div id="materialBalanceChart" style="width: 100%; height: 450px;"></div>
+                <div id="chart1" style="width: 100%; height: 500px;"></div>
             </div>
 
-            <!-- 2. COMPOSITIONS PRODUITS -->
+            <!-- 2. RÉSULTATS SHORTCUT -->
             <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
                 <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-green-500 pb-2">
-                    <i class="fas fa-flask text-green-600"></i> 2. Compositions des Produits
+                    <i class="fas fa-calculator text-green-600"></i> 2. Résultats Shortcut (btx_shortcut_results.png)
                 </h4>
-                <div id="compositionChart" style="width: 100%; height: 450px;"></div>
+                <div id="chart2" style="width: 100%; height: 550px;"></div>
             </div>
 
-            <!-- 3. RÉSULTATS SHORTCUT -->
+            <!-- 3. PROFILS DE COMPOSITION -->
             <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
                 <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-purple-500 pb-2">
-                    <i class="fas fa-calculator text-purple-600"></i> 3. Résultats des Méthodes Simplifiées
+                    <i class="fas fa-chart-line text-purple-600"></i> 3. Profils de Composition (btx_composition_profiles.png)
                 </h4>
-                <div id="shortcutResultsChart" style="width: 100%; height: 500px;"></div>
+                <div id="chart3" style="width: 100%; height: 600px;"></div>
             </div>
 
-            <!-- 4. PROFILS DE COMPOSITION -->
-            <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
-                <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-indigo-500 pb-2">
-                    <i class="fas fa-chart-line text-indigo-600"></i> 4. Profils de Composition (Phase Liquide)
-                </h4>
-                <div id="compositionProfilesChart" style="width: 100%; height: 550px;"></div>
-            </div>
-
-            <!-- 5. PROFIL DE TEMPÉRATURE -->
+            <!-- 4. PROFIL DE TEMPÉRATURE -->
             <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
                 <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-red-500 pb-2">
-                    <i class="fas fa-thermometer-half text-red-600"></i> 5. Profil de Température
+                    <i class="fas fa-thermometer-half text-red-600"></i> 4. Profil de Température (btx_temperature_profile.png)
                 </h4>
-                <div id="temperatureProfileChart" style="width: 100%; height: 550px;"></div>
+                <div id="chart4" style="width: 100%; height: 600px;"></div>
             </div>
 
-            <!-- 6. DISTRIBUTION DES COMPOSÉS -->
+            <!-- 5. ÉTUDE REFLUX -->
             <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
-                <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-cyan-500 pb-2">
-                    <i class="fas fa-sitemap text-cyan-600"></i> 6. Distribution des Composés
+                <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-orange-500 pb-2">
+                    <i class="fas fa-chart-area text-orange-600"></i> 5. Étude Paramétrique du Reflux (btx_etude_reflux.png)
                 </h4>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full" id="distributionTable">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-sm font-bold text-gray-700">Composé</th>
-                                <th class="px-6 py-3 text-right text-sm font-bold text-gray-700">Alim (kmol/h)</th>
-                                <th class="px-6 py-3 text-right text-sm font-bold text-gray-700">Dist (kmol/h)</th>
-                                <th class="px-6 py-3 text-right text-sm font-bold text-gray-700">Rés (kmol/h)</th>
-                                <th class="px-6 py-3 text-right text-sm font-bold text-gray-700">Récup D (%)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="distributionTableBody"></tbody>
-                    </table>
-                </div>
+                <div id="chart5" style="width: 100%; height: 550px;"></div>
             </div>
 
-            <!-- 7. ESTIMATION ÉNERGÉTIQUE -->
-            <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
-                <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-yellow-500 pb-2">
-                    <i class="fas fa-bolt text-yellow-600"></i> 7. Estimation Énergétique
-                </h4>
-                <div id="energyChart" style="width: 100%; height: 400px;"></div>
-                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
-                        <div class="text-sm text-gray-600">Condenseur</div>
-                        <div class="text-2xl font-bold text-blue-600" id="energy-condenser">-</div>
-                    </div>
-                    <div class="bg-red-50 p-4 rounded-lg border-2 border-red-200">
-                        <div class="text-sm text-gray-600">Rebouilleur</div>
-                        <div class="text-2xl font-bold text-red-600" id="energy-reboiler">-</div>
-                    </div>
-                    <div class="bg-purple-50 p-4 rounded-lg border-2 border-purple-200">
-                        <div class="text-sm text-gray-600">Rapport Q_R/Q_C</div>
-                        <div class="text-2xl font-bold text-purple-600" id="energy-ratio">-</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 8. ÉTUDE PARAMÉTRIQUE DU REFLUX -->
-            <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
-                <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-pink-500 pb-2">
-                    <i class="fas fa-chart-area text-pink-600"></i> 8. Étude Paramétrique: Effet du Reflux
-                </h4>
-                <div id="refluxStudyChart" style="width: 100%; height: 500px;"></div>
-            </div>
-
-            <!-- 9. TABLEAU DÉTAILLÉ -->
+            <!-- Tableau récapitulatif -->
             <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
                 <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-gray-500 pb-2">
-                    <i class="fas fa-table text-gray-600"></i> 9. Tableau Détaillé des Résultats
+                    <i class="fas fa-table text-gray-600"></i> Résultats Détaillés
                 </h4>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -322,28 +267,16 @@
                                 <th class="px-6 py-3 text-left text-sm font-bold text-gray-700">Méthode</th>
                             </tr>
                         </thead>
-                        <tbody id="resultsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+                        <tbody id="resultsTableBody"></tbody>
                     </table>
                 </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="flex flex-wrap justify-center gap-4 mb-8 no-print">
-                <button onclick="newSimulation()" class="bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 rounded-lg font-bold transition transform hover:scale-105 shadow-lg">
-                    <i class="fas fa-plus"></i> Nouvelle Simulation
-                </button>
-                <button onclick="window.print()" class="bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg font-bold transition transform hover:scale-105 shadow-lg">
-                    <i class="fas fa-download"></i> Télécharger PDF
-                </button>
-                <button onclick="copyResults()" class="bg-purple-500 hover:bg-purple-600 text-white px-8 py-4 rounded-lg font-bold transition transform hover:scale-105 shadow-lg">
-                    <i class="fas fa-copy"></i> Copier Résultats
-                </button>
             </div>
         </div>
     </div>
 
     <script>
         let simulationResults = null;
+        let currentSessionId = null;
 
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
@@ -381,7 +314,10 @@
                 feed_composition: [z1, z2, z3],
                 pressure: parseFloat(document.getElementById('pressure').value) * 1000,
                 reflux_factor: parseFloat(document.getElementById('refluxFactor').value),
-                efficiency: parseFloat(document.getElementById('efficiency').value)
+                efficiency: parseFloat(document.getElementById('efficiency').value),
+                recovery_LK: 0.95,
+                recovery_HK: 0.95,
+                feed_quality: 1.0
             };
 
             document.getElementById('simulateBtn').disabled = true;
@@ -425,10 +361,10 @@
 
         function getProgressMessage(progress) {
             if (progress < 20) return 'Chargement des composés...';
-            if (progress < 40) return 'Configuration de la colonne...';
-            if (progress < 60) return 'Calculs thermodynamiques...';
-            if (progress < 80) return 'Méthodes simplifiées (Fenske, Underwood, Gilliland)...';
-            return 'Génération des visualisations...';
+            if (progress < 40) return 'Bilans matières...';
+            if (progress < 60) return 'Méthodes simplifiées (Fenske, Underwood)...';
+            if (progress < 80) return 'Génération des profils...';
+            return 'Finalisation des visualisations...';
         }
 
         function updateProgress(percent, message) {
@@ -439,122 +375,68 @@
 
         function displayResults(results) {
             simulationResults = results;
+            currentSessionId = results.session_id;
 
-            // KPIs
             document.getElementById('kpi-nmin').textContent = results.results.N_min.toFixed(1);
             document.getElementById('kpi-nreal').textContent = results.results.N_real;
             document.getElementById('kpi-reflux').textContent = results.results.R.toFixed(2);
             document.getElementById('kpi-feed').textContent = results.results.feed_stage;
 
-            // Générer tous les graphiques
-            create1_MaterialBalance(results);
-            create2_CompositionProducts(results);
-            create3_ShortcutResults(results);
-            create4_CompositionProfiles(results);
-            create5_TemperatureProfile(results);
-            create6_DistributionTable(results);
-            create7_EnergyEstimation(results);
-            create8_RefluxStudy(results);
-            create9_DetailedTable(results);
+            createChart1_BilanMatiere(results);
+            createChart2_ShortcutResults(results);
+            createChart3_CompositionProfiles(results);
+            createChart4_TemperatureProfile(results);
+            createChart5_RefluxStudy(results);
+            createResultsTable(results);
 
-            // Affichage
             document.getElementById('results').classList.remove('hidden');
             document.getElementById('progressContainer').classList.add('hidden');
             document.getElementById('simulateBtn').disabled = false;
             document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // 1. BILAN MATIÈRE
-        function create1_MaterialBalance(results) {
+        function createChart1_BilanMatiere(results) {
             const data = [{
                 x: ['Alimentation', 'Distillat', 'Résidu'],
                 y: [results.feed_flow, results.results.D, results.results.B],
                 type: 'bar',
-                marker: { 
-                    color: ['#3b82f6', '#10b981', '#ef4444'],
-                    line: { color: '#1f2937', width: 2 }
-                },
-                text: [
-                    `${results.feed_flow.toFixed(1)} kmol/h`,
-                    `${results.results.D.toFixed(1)} kmol/h`,
-                    `${results.results.B.toFixed(1)} kmol/h`
-                ],
+                marker: { color: ['#3b82f6', '#10b981', '#ef4444'], line: { color: '#000', width: 2 }},
+                text: [`${results.feed_flow.toFixed(1)} kmol/h`, `${results.results.D.toFixed(1)} kmol/h`, `${results.results.B.toFixed(1)} kmol/h`],
                 textposition: 'outside',
-                textfont: { size: 16, color: '#1f2937', family: 'Arial, sans-serif', weight: 'bold' }
+                textfont: { size: 16, weight: 'bold' }
             }];
 
             const layout = {
-                title: {
-                    text: 'Débits des Flux de la Colonne',
-                    font: { size: 20, color: '#1f2937', family: 'Arial, sans-serif', weight: 'bold' }
-                },
-                xaxis: { 
-                    title: 'Flux',
-                    titlefont: { size: 16, color: '#4b5563', weight: 'bold' },
-                    tickfont: { size: 14 }
-                },
-                yaxis: { 
-                    title: 'Débit (kmol/h)',
-                    titlefont: { size: 16, color: '#4b5563', weight: 'bold' },
-                    tickfont: { size: 14 }
-                },
+                title: { text: 'Bilans Matières - Débits des Flux', font: { size: 20, weight: 'bold' }},
+                xaxis: { title: 'Flux', titlefont: { size: 16, weight: 'bold' }},
+                yaxis: { title: 'Débit (kmol/h)', titlefont: { size: 16, weight: 'bold' }},
                 margin: { t: 80, b: 80, l: 80, r: 40 },
                 paper_bgcolor: 'white',
-                plot_bgcolor: '#f9fafb',
-                showlegend: false
+                plot_bgcolor: '#f9fafb'
             };
 
-            Plotly.newPlot('materialBalanceChart', data, layout, {responsive: true, displaylogo: false});
+            Plotly.newPlot('chart1', data, layout, {responsive: true, displaylogo: false, toImageButtonOptions: {filename: 'btx_bilan_matiere'}});
         }
 
-        // 2. COMPOSITIONS PRODUITS
-        function create2_CompositionProducts(results) {
-            const compounds = results.compounds;
-            
-            const trace2 = {
-                x: compounds,
-                y: results.results.x_B.map(x => (x * 100)),
-                name: 'Résidu',
-                type: 'bar',
-                marker: { color: '#ef4444', line: { color: '#dc2626', width: 2 }},
-                text: results.results.x_B.map(x => `${(x * 100).toFixed(1)}%`),
-                textposition: 'outside',
-                textfont: { size: 14, weight: 'bold' }
-            };
-
-            const layout = {
-                title: { text: 'Compositions Molaires des Produits', font: { size: 20, weight: 'bold' }},
-                xaxis: { title: 'Composé', titlefont: { size: 16, weight: 'bold' }, tickfont: { size: 14 }},
-                yaxis: { title: 'Fraction molaire (%)', titlefont: { size: 16, weight: 'bold' }, range: [0, 100]},
-                barmode: 'group',
-                margin: { t: 80, b: 80, l: 80, r: 40 },
-                paper_bgcolor: 'white',
-                plot_bgcolor: '#f9fafb',
-                legend: { x: 0.5, xanchor: 'center', y: 1.15, orientation: 'h', bgcolor: 'white' }
-            };
-
-            Plotly.newPlot('compositionChart', [trace1, trace2], layout, {responsive: true, displaylogo: false});
-        }
-
-        // 3. RÉSULTATS SHORTCUT
-        function create3_ShortcutResults(results) {
-            const data = [
-                { method: 'Fenske<br>(N_min)', value: results.results.N_min, color: '#3b82f6' },
-                { method: 'Underwood<br>(R_min)', value: results.results.R_min, color: '#10b981' },
-                { method: 'Gilliland<br>(N_théo)', value: results.results.N_real * results.results.efficiency, color: '#8b5cf6' },
-                { method: 'N réel', value: results.results.N_real, color: '#f59e0b' },
-                { method: 'Kirkbride<br>(Plat. alim)', value: results.results.feed_stage, color: '#ef4444' }
+        function createChart2_ShortcutResults(results) {
+            const methods = ['Fenske<br>(N_min)', 'Underwood<br>(R_min)', 'Gilliland<br>(N_théo)', 'N réel', 'Kirkbride<br>(Plat. alim)'];
+            const values = [
+                results.results.N_min,
+                results.results.R_min,
+                results.results.N_real * results.results.efficiency,
+                results.results.N_real,
+                results.results.feed_stage
             ];
 
-            const trace = {
-                x: data.map(d => d.method),
-                y: data.map(d => d.value),
+            const data = [{
+                x: methods,
+                y: values,
                 type: 'bar',
-                marker: { color: data.map(d => d.color), line: { color: '#1f2937', width: 2 }},
-                text: data.map(d => d.value.toFixed(2)),
+                marker: { color: ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444'], line: { color: '#000', width: 2 }},
+                text: values.map(v => v.toFixed(2)),
                 textposition: 'outside',
                 textfont: { size: 16, weight: 'bold' }
-            };
+            }];
 
             const layout = {
                 title: { text: 'Résultats des Méthodes Simplifiées', font: { size: 20, weight: 'bold' }},
@@ -565,119 +447,55 @@
                 plot_bgcolor: '#f9fafb'
             };
 
-            Plotly.newPlot('shortcutResultsChart', [trace], layout, {responsive: true, displaylogo: false});
+            Plotly.newPlot('chart2', data, layout, {responsive: true, displaylogo: false, toImageButtonOptions: {filename: 'btx_shortcut_results'}});
         }
 
-        // 4. PROFILS DE COMPOSITION
-        function create4_CompositionProfiles(results) {
+        function createChart3_CompositionProfiles(results) {
             const N = results.results.N_real;
             const stages = Array.from({length: N}, (_, i) => i + 1);
             const feedStage = results.results.feed_stage;
             
-            const profiles = stages.map((stage, i) => {
-                const ratio = stage <= feedStage 
-                    ? (stage - 1) / feedStage
-                    : (stage - feedStage) / (N - feedStage);
-                
-                const benzene = stage <= feedStage
-                    ? (results.results.x_D[0] + ratio * (0.333 - results.results.x_D[0])) * 100
-                    : (0.333 + ratio * (results.results.x_B[0] - 0.333)) * 100;
-                    
-                const toluene = stage <= feedStage
-                    ? (results.results.x_D[1] + ratio * (0.333 - results.results.x_D[1])) * 100
-                    : (0.333 + ratio * (results.results.x_B[1] - 0.333)) * 100;
-                    
-                const xylene = stage <= feedStage
-                    ? (results.results.x_D[2] + ratio * (0.334 - results.results.x_D[2])) * 100
-                    : (0.334 + ratio * (results.results.x_B[2] - 0.334)) * 100;
-                
+            const profiles = stages.map((stage) => {
+                const ratio = stage <= feedStage ? (stage - 1) / feedStage : (stage - feedStage) / (N - feedStage);
+                const benzene = (stage <= feedStage ? (results.results.x_D[0] + ratio * (0.333 - results.results.x_D[0])) : (0.333 + ratio * (results.results.x_B[0] - 0.333))) * 100;
+                const toluene = (stage <= feedStage ? (results.results.x_D[1] + ratio * (0.333 - results.results.x_D[1])) : (0.333 + ratio * (results.results.x_B[1] - 0.333))) * 100;
+                const xylene = (stage <= feedStage ? (results.results.x_D[2] + ratio * (0.334 - results.results.x_D[2])) : (0.334 + ratio * (results.results.x_B[2] - 0.334))) * 100;
                 return { stage, benzene, toluene, xylene };
             });
 
-            const trace1 = {
-                x: profiles.map(p => p.benzene),
-                y: profiles.map(p => p.stage),
-                name: 'Benzène',
-                type: 'scatter',
-                mode: 'lines+markers',
-                line: { color: '#3b82f6', width: 3 },
-                marker: { size: 8 }
-            };
-
-            const trace2 = {
-                x: profiles.map(p => p.toluene),
-                y: profiles.map(p => p.stage),
-                name: 'Toluène',
-                type: 'scatter',
-                mode: 'lines+markers',
-                line: { color: '#10b981', width: 3 },
-                marker: { size: 8 }
-            };
-
-            const trace3 = {
-                x: profiles.map(p => p.xylene),
-                y: profiles.map(p => p.stage),
-                name: 'o-Xylène',
-                type: 'scatter',
-                mode: 'lines+markers',
-                line: { color: '#ef4444', width: 3 },
-                marker: { size: 8 }
-            };
+            const data = [
+                { x: profiles.map(p => p.benzene), y: profiles.map(p => p.stage), name: 'Benzène', type: 'scatter', mode: 'lines+markers', line: { color: '#3b82f6', width: 3 }, marker: { size: 8 }},
+                { x: profiles.map(p => p.toluene), y: profiles.map(p => p.stage), name: 'Toluène', type: 'scatter', mode: 'lines+markers', line: { color: '#10b981', width: 3 }, marker: { size: 8 }},
+                { x: profiles.map(p => p.xylene), y: profiles.map(p => p.stage), name: 'o-Xylène', type: 'scatter', mode: 'lines+markers', line: { color: '#ef4444', width: 3 }, marker: { size: 8 }}
+            ];
 
             const layout = {
                 title: { text: 'Profils de Composition Phase Liquide', font: { size: 20, weight: 'bold' }},
                 xaxis: { title: 'Fraction molaire (%)', titlefont: { size: 16, weight: 'bold' }, range: [0, 100] },
                 yaxis: { title: 'Numéro de plateau', titlefont: { size: 16, weight: 'bold' }, autorange: 'reversed' },
-                shapes: [{
-                    type: 'line',
-                    x0: 0, x1: 100,
-                    y0: feedStage, y1: feedStage,
-                    line: { color: '#8b5cf6', width: 3, dash: 'dash' }
-                }],
-                annotations: [{
-                    x: 50, y: feedStage,
-                    text: `Alimentation (Plateau ${feedStage})`,
-                    showarrow: true,
-                    arrowhead: 2,
-                    ax: 0, ay: -40,
-                    font: { size: 14, color: '#8b5cf6', weight: 'bold' }
-                }],
+                shapes: [{ type: 'line', x0: 0, x1: 100, y0: feedStage, y1: feedStage, line: { color: '#8b5cf6', width: 3, dash: 'dash' }}],
+                annotations: [{ x: 50, y: feedStage, text: `Alimentation (Plateau ${feedStage})`, showarrow: true, arrowhead: 2, ax: 0, ay: -40, font: { size: 14, color: '#8b5cf6', weight: 'bold' }}],
                 margin: { t: 80, b: 80, l: 80, r: 40 },
                 paper_bgcolor: 'white',
-                plot_bgcolor: '#f9fafb',
-                legend: { x: 0.02, y: 0.98 }
+                plot_bgcolor: '#f9fafb'
             };
 
-            Plotly.newPlot('compositionProfilesChart', [trace1, trace2, trace3], layout, {responsive: true, displaylogo: false});
+            Plotly.newPlot('chart3', data, layout, {responsive: true, displaylogo: false, toImageButtonOptions: {filename: 'btx_composition_profiles'}});
         }
 
-        // 5. PROFIL DE TEMPÉRATURE
-        function create5_TemperatureProfile(results) {
+        function createChart4_TemperatureProfile(results) {
             const N = results.results.N_real;
             const stages = Array.from({length: N}, (_, i) => i + 1);
-            const T_top = 80.1;
-            const T_bottom = 138.5;
+            const T_top = 80.1, T_bottom = 138.5;
             const temperatures = stages.map((s, i) => T_top + (T_bottom - T_top) * (i / (N - 1)));
 
-            const trace = {
-                x: temperatures,
-                y: stages,
-                type: 'scatter',
-                mode: 'lines+markers',
-                line: { color: '#f59e0b', width: 4 },
-                marker: { size: 10, color: '#ea580c' }
-            };
+            const data = [{ x: temperatures, y: stages, type: 'scatter', mode: 'lines+markers', line: { color: '#f59e0b', width: 4 }, marker: { size: 10, color: '#ea580c' }}];
 
             const layout = {
                 title: { text: 'Profil de Température dans la Colonne', font: { size: 20, weight: 'bold' }},
                 xaxis: { title: 'Température (°C)', titlefont: { size: 16, weight: 'bold' }},
                 yaxis: { title: 'Numéro de plateau', titlefont: { size: 16, weight: 'bold' }, autorange: 'reversed' },
-                shapes: [{
-                    type: 'line',
-                    x0: T_top, x1: T_bottom,
-                    y0: results.results.feed_stage, y1: results.results.feed_stage,
-                    line: { color: '#8b5cf6', width: 3, dash: 'dash' }
-                }],
+                shapes: [{ type: 'line', x0: T_top, x1: T_bottom, y0: results.results.feed_stage, y1: results.results.feed_stage, line: { color: '#8b5cf6', width: 3, dash: 'dash' }}],
                 annotations: [
                     { x: T_top, y: 1, text: `Tête: ${T_top.toFixed(1)}°C`, showarrow: true, ax: 40, ay: -30, font: { size: 14, color: '#3b82f6', weight: 'bold' }},
                     { x: T_bottom, y: N, text: `Fond: ${T_bottom.toFixed(1)}°C`, showarrow: true, ax: -40, ay: 30, font: { size: 14, color: '#ef4444', weight: 'bold' }}
@@ -687,78 +505,10 @@
                 plot_bgcolor: '#f9fafb'
             };
 
-            Plotly.newPlot('temperatureProfileChart', [trace], layout, {responsive: true, displaylogo: false});
+            Plotly.newPlot('chart4', data, layout, {responsive: true, displaylogo: false, toImageButtonOptions: {filename: 'btx_temperature_profile'}});
         }
 
-        // 6. DISTRIBUTION TABLE
-        function create6_DistributionTable(results) {
-            const tbody = document.getElementById('distributionTableBody');
-            const compounds = results.compounds;
-            let html = '';
-            
-            compounds.forEach((comp, i) => {
-                const F_i = results.feed_flow * [0.333, 0.333, 0.334][i];
-                const D_i = results.results.D * results.results.x_D[i];
-                const B_i = results.results.B * results.results.x_B[i];
-                const recovery = (D_i / F_i) * 100;
-                
-                html += `
-                    <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
-                        <td class="px-6 py-4 font-bold text-gray-900">${comp}</td>
-                        <td class="px-6 py-4 text-right font-semibold text-blue-600">${F_i.toFixed(2)}</td>
-                        <td class="px-6 py-4 text-right font-semibold text-green-600">${D_i.toFixed(2)}</td>
-                        <td class="px-6 py-4 text-right font-semibold text-red-600">${B_i.toFixed(2)}</td>
-                        <td class="px-6 py-4 text-right font-bold text-purple-600">${recovery.toFixed(1)}</td>
-                    </tr>
-                `;
-            });
-            
-            html += `
-                <tr class="bg-gray-100 font-bold">
-                    <td class="px-6 py-4 text-gray-900">TOTAL</td>
-                    <td class="px-6 py-4 text-right text-gray-900">${results.feed_flow.toFixed(2)}</td>
-                    <td class="px-6 py-4 text-right text-gray-900">${results.results.D.toFixed(2)}</td>
-                    <td class="px-6 py-4 text-right text-gray-900">${results.results.B.toFixed(2)}</td>
-                    <td class="px-6 py-4 text-right text-gray-900">-</td>
-                </tr>
-            `;
-            
-            tbody.innerHTML = html;
-        }
-
-        // 7. ÉNERGIE
-        function create7_EnergyEstimation(results) {
-            const Q_C = 1245;
-            const Q_R = 1356;
-            
-            document.getElementById('energy-condenser').textContent = `${Q_C} kW (refroid.)`;
-            document.getElementById('energy-reboiler').textContent = `${Q_R} kW (chauff.)`;
-            document.getElementById('energy-ratio').textContent = (Q_R / Q_C).toFixed(2);
-
-            const data = [{
-                x: ['Condenseur', 'Rebouilleur'],
-                y: [Q_C, Q_R],
-                type: 'bar',
-                marker: { color: ['#3b82f6', '#ef4444'], line: { color: '#1f2937', width: 2 }},
-                text: [`${Q_C} kW`, `${Q_R} kW`],
-                textposition: 'outside',
-                textfont: { size: 16, weight: 'bold' }
-            }];
-
-            const layout = {
-                title: { text: 'Besoins Énergétiques', font: { size: 20, weight: 'bold' }},
-                yaxis: { title: 'Puissance (kW)', titlefont: { size: 16, weight: 'bold' }},
-                margin: { t: 80, b: 80, l: 80, r: 40 },
-                paper_bgcolor: 'white',
-                plot_bgcolor: '#f9fafb',
-                showlegend: false
-            };
-
-            Plotly.newPlot('energyChart', data, layout, {responsive: true, displaylogo: false});
-        }
-
-        // 8. ÉTUDE REFLUX
-        function create8_RefluxStudy(results) {
+        function createChart5_RefluxStudy(results) {
             const R_min = results.results.R_min;
             const N_min = results.results.N_min;
             const factors = Array.from({length: 20}, (_, i) => 1.1 + i * 0.095);
@@ -772,7 +522,7 @@
                 return N / 0.70;
             });
 
-            const trace = {
+            const data = [{
                 x: factors,
                 y: plateaux,
                 type: 'scatter',
@@ -780,7 +530,7 @@
                 line: { color: '#3b82f6', width: 4 },
                 marker: { size: 10 },
                 name: 'Courbe N vs R/R_min'
-            };
+            }];
 
             const layout = {
                 title: { text: 'Effet du Rapport de Reflux sur le Nombre de Plateaux', font: { size: 20, weight: 'bold' }},
@@ -799,17 +549,16 @@
                 plot_bgcolor: '#f9fafb'
             };
 
-            Plotly.newPlot('refluxStudyChart', [trace], layout, {responsive: true, displaylogo: false});
+            Plotly.newPlot('chart5', data, layout, {responsive: true, displaylogo: false, toImageButtonOptions: {filename: 'btx_etude_reflux'}});
         }
 
-        // 9. TABLEAU DÉTAILLÉ
-        function create9_DetailedTable(results) {
+        function createResultsTable(results) {
             const tableData = [
                 ['N_min (Fenske)', results.results.N_min.toFixed(2), 'plateaux', 'Reflux total'],
                 ['R_min (Underwood)', results.results.R_min.toFixed(3), '-', 'Reflux minimum'],
                 ['θ (Underwood)', results.results.theta.toFixed(3), '-', 'Racine équation'],
                 ['R opératoire', results.results.R.toFixed(3), '-', `${(results.results.R / results.results.R_min).toFixed(2)}× R_min`],
-                ['N théorique (Gilliland)', (results.results.N_real * results.results.efficiency).toFixed(1), 'plateaux', 'Corrélation'],
+                ['N théorique', (results.results.N_real * results.results.efficiency).toFixed(1), 'plateaux', 'Gilliland'],
                 ['Efficacité', `${(results.results.efficiency * 100).toFixed(0)}`, '%', 'Donnée'],
                 ['N réel', results.results.N_real, 'plateaux', 'N_théo / Efficacité'],
                 ['N rectification', results.results.N_R, 'plateaux', 'Kirkbride'],
@@ -831,6 +580,40 @@
             `).join('');
         }
 
+        async function downloadPDF() {
+            if (!currentSessionId) {
+                showNotification('Aucune simulation disponible', 'error');
+                return;
+            }
+
+            try {
+                showNotification('Génération du PDF en cours...', 'info');
+                
+                const response = await fetch(`/api/generate_pdf/${currentSessionId}`, {
+                    method: 'GET'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erreur lors de la génération du PDF');
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `rapport_distillation_${currentSessionId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+                showNotification('PDF téléchargé avec succès !', 'success');
+            } catch (error) {
+                console.error('Erreur téléchargement PDF:', error);
+                showNotification(`Erreur: ${error.message}`, 'error');
+            }
+        }
+
         function resetUI() {
             document.getElementById('simulateBtn').disabled = false;
             document.getElementById('progressContainer').classList.add('hidden');
@@ -840,24 +623,6 @@
             document.getElementById('simulationForm').reset();
             document.getElementById('results').classList.add('hidden');
             showNotification('Formulaire réinitialisé', 'info');
-        }
-
-        function copyResults() {
-            if (!simulationResults) {
-                showNotification('Aucune simulation disponible', 'error');
-                return;
-            }
-            const text = JSON.stringify(simulationResults, null, 2);
-            navigator.clipboard.writeText(text);
-            showNotification('Résultats copiés !', 'success');
-        }
-
-        function newSimulation() {
-            document.getElementById('simulationForm').reset();
-            document.getElementById('results').classList.add('hidden');
-            document.getElementById('simulationSection').classList.remove('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            showNotification('Prêt pour une nouvelle simulation', 'info');
         }
 
         function editSimulation() {

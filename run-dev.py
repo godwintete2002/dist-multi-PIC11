@@ -1,12 +1,14 @@
 """
-Point d'entrée avec support des templates HTML
-===============================================
+Point d'entrée avec support des templates HTML et PDF
+======================================================
 """
 import os
-from flask import Flask, jsonify, request, render_template, send_from_directory
+import json
+from flask import Flask, jsonify, request, render_template, send_file
 from flask_cors import CORS
 from datetime import datetime
 import logging
+from pathlib import Path
 
 logging.basicConfig(
     level=logging.INFO,
@@ -22,22 +24,35 @@ try:
     MODULES_AVAILABLE = True
     logger.info("✅ Modules importés avec succès")
 except ImportError as e:
-    logger.warning(f"⚠️  Modules non trouvés: {e}")
+    logger.warning(f"⚠️ Modules non trouvés: {e}")
     MODULES_AVAILABLE = False
+
+# Importer le générateur PDF
+try:
+    from app.pdf_generation.report_generator import ReportGenerator
+    PDF_AVAILABLE = True
+    logger.info("✅ Générateur PDF disponible")
+except ImportError as e:
+    logger.warning(f"⚠️ Générateur PDF non disponible: {e}")
+    PDF_AVAILABLE = False
 
 # Cache en mémoire
 MEMORY_CACHE = {}
+RESULTS_STORAGE = {}  # Stockage des résultats pour PDF
 
 def create_app():
     """Crée l'application Flask avec templates"""
     
-    # Créer l'app avec template_folder
     app = Flask(__name__, 
                 template_folder='templates',
                 static_folder='static')
     
     app.config['SECRET_KEY'] = 'dev-secret-key'
     CORS(app)
+    
+    # Créer les dossiers nécessaires
+    for folder in ['logs', 'results', 'temp_uploads']:
+        Path(folder).mkdir(exist_ok=True)
     
     # =========================================================================
     # ROUTES WEB (HTML)
@@ -56,8 +71,8 @@ def create_app():
             'timestamp': datetime.now().isoformat(),
             'version': '2.0.0',
             'mode': 'development',
-            'redis': 'memory',
-            'modules': MODULES_AVAILABLE
+            'modules': MODULES_AVAILABLE,
+            'pdf': PDF_AVAILABLE
         })
     
     # =========================================================================
@@ -141,7 +156,7 @@ def create_app():
             thermo = ThermodynamicPackage(compounds)
             
             # Simulation
-            logger.info("⚙️  Initialisation de la simulation...")
+            logger.info("⚙️ Initialisation de la simulation...")
             shortcut = ShortcutDistillation(
                 thermo,
                 data['feed_flow'],
@@ -164,10 +179,12 @@ def create_app():
                 'session_id': session_id,
                 'compounds': data['compounds'],
                 'feed_flow': data['feed_flow'],
+                'feed_composition': data['feed_composition'],
                 'pressure': data['pressure'],
                 'results': {
                     'N_min': float(results['N_min']),
                     'N_real': int(results['N_real']),
+                    'N_theoretical': float(results.get('N_theoretical', results['N_real'] * results['efficiency'])),
                     'R_min': float(results['R_min']),
                     'R': float(results['R']),
                     'feed_stage': int(results['feed_stage']),
@@ -179,10 +196,23 @@ def create_app():
                     'N_S': int(results['N_S']),
                     'alpha_avg': float(results['alpha_avg']),
                     'theta': float(results['theta']),
-                    'efficiency': float(results['efficiency'])
+                    'efficiency': float(results['efficiency']),
+                    'L': float(results.get('L', 0)),
+                    'V': float(results.get('V', 0))
                 },
                 'timestamp': datetime.now().isoformat()
             }
+            
+            # Stocker pour PDF
+            RESULTS_STORAGE[session_id] = response_data
+            
+            # Sauvegarder sur disque
+            results_dir = Path('results') / session_id
+            results_dir.mkdir(parents=True, exist_ok=True)
+            
+            results_file = results_dir / 'results.json'
+            with open(results_file, 'w', encoding='utf-8') as f:
+                json.dump(response_data, f, indent=2, ensure_ascii=False)
             
             # Mettre en cache
             MEMORY_CACHE[cache_key] = response_data
@@ -203,23 +233,66 @@ def create_app():
                 'type': type(e).__name__
             }), 500
     
+    @app.route('/api/generate_pdf/<session_id>', methods=['GET'])
+    def generate_pdf(session_id):
+        """Génère un rapport PDF pour une simulation"""
+        if not PDF_AVAILABLE:
+            return jsonify({
+                'success': False,
+                'error': 'Générateur PDF non disponible. Installer: pip install reportlab matplotlib'
+            }), 500
+        
+        try:
+            # Chercher dans le cache mémoire d'abord
+            if session_id in RESULTS_STORAGE:
+                results = RESULTS_STORAGE[session_id]
+                logger.info(f"📄 Résultats trouvés en mémoire pour {session_id}")
+            else:
+                # Sinon chercher sur disque
+                results_file = Path('results') / session_id / 'results.json'
+                if not results_file.exists():
+                    return jsonify({
+                        'success': False,
+                        'error': f'Session {session_id} non trouvée'
+                    }), 404
+                
+                with open(results_file, 'r', encoding='utf-8') as f:
+                    results = json.load(f)
+                logger.info(f"📄 Résultats chargés depuis disque pour {session_id}")
+            
+            # Générer le PDF
+            pdf_path = Path('results') / session_id / f'rapport_{session_id}.pdf'
+            pdf_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            logger.info(f"🔄 Génération PDF en cours...")
+            generator = ReportGenerator()
+            generator.generate_report(results, str(pdf_path))
+            
+            logger.info(f"✅ PDF généré: {pdf_path}")
+            
+            return send_file(
+                pdf_path,
+                as_attachment=True,
+                download_name=f'rapport_distillation_{session_id}.pdf',
+                mimetype='application/pdf'
+            )
+        
+        except Exception as e:
+            logger.error(f"❌ Erreur génération PDF: {e}", exc_info=True)
+            return jsonify({
+                'success': False,
+                'error': str(e),
+                'type': type(e).__name__
+            }), 500
+    
     return app
 
 
 if __name__ == '__main__':
     print("=" * 80)
     print("🚀 Démarrage de l'application Distillation Multicomposants")
-    print("   MODE: Développement avec Interface Web")
+    print("   MODE: Développement avec Interface Web + PDF")
     print("=" * 80)
-    
-    # Créer le dossier templates s'il n'existe pas
-    import pathlib
-    templates_dir = pathlib.Path('templates')
-    templates_dir.mkdir(exist_ok=True)
-    
-    # Créer les dossiers nécessaires
-    for folder in ['logs', 'results', 'temp_uploads']:
-        pathlib.Path(folder).mkdir(exist_ok=True)
     
     app = create_app()
     
@@ -227,8 +300,9 @@ if __name__ == '__main__':
     
     print(f"\n✅ Serveur démarré sur: http://localhost:{port}")
     print(f"🌐 Interface Web: http://localhost:{port}")
-    print(f"🔍 Health check: http://localhost:{port}/health")
+    print(f"🏥 Health check: http://localhost:{port}/health")
     print(f"📋 API Composés: http://localhost:{port}/api/compounds")
+    print(f"📄 PDF: Activé" if PDF_AVAILABLE else "⚠️  PDF: Non disponible")
     print(f"\n💡 Appuyez sur Ctrl+C pour arrêter\n")
     print("=" * 80)
     

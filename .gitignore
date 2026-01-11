@@ -46,6 +46,7 @@ temp_uploads/
 *.pdf
 *.png
 *.jpg
+!docs/*.pdf
 
 # Testing
 .pytest_cache/
